@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121213" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Wordle — Word Games</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <button id="btn-help" class="icon-btn" aria-label="How to play" title="How to play">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+      </div>
+
+      <button id="btn-mode" class="title-btn" aria-label="Change game mode or variant">
+        <span id="header-title" class="header-title">Wordle</span>
+        <span id="header-badge" class="header-badge">5×6 · Daily</span>
+      </button>
+
+      <div class="header-right">
+        <button id="btn-stats" class="icon-btn" aria-label="Statistics" title="Statistics">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </button>
+        <button id="btn-settings" class="icon-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.77 1.02 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <main class="board-container">
+      <div id="board" class="board" role="grid" aria-label="Guess grid"></div>
+    </main>
+
+    <footer id="keyboard" class="keyboard" aria-label="On-screen keyboard"></footer>
+  </div>
+
+  <!-- Modal Backdrop -->
+  <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <!-- Help Modal -->
+    <div id="modal-help" class="modal hidden">
+      <div class="modal-header">
+        <h2>How To Play</h2>
+        <button class="icon-btn modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body help-body">
+        <p id="help-summary">Guess the word in 6 tries.</p>
+        <ul>
+          <li>Each guess must be a valid English word.</li>
+          <li>The color of the tiles will change to show how close your guess was.</li>
+        </ul>
+        <div class="examples">
+          <p><strong>Examples</strong></p>
+          <div class="example-row">
+            <div class="tile tile-sm" data-state="correct">W</div>
+            <div class="tile tile-sm">E</div>
+            <div class="tile tile-sm">A</div>
+            <div class="tile tile-sm">R</div>
+            <div class="tile tile-sm">Y</div>
+          </div>
+          <p class="example-caption"><strong>W</strong> is in the word and in the correct spot.</p>
+
+          <div class="example-row">
+            <div class="tile tile-sm">P</div>
+            <div class="tile tile-sm" data-state="present">I</div>
+            <div class="tile tile-sm">L</div>
+            <div class="tile tile-sm">L</div>
+            <div class="tile tile-sm">S</div>
+          </div>
+          <p class="example-caption"><strong>I</strong> is in the word but in the wrong spot.</p>
+
+          <div class="example-row">
+            <div class="tile tile-sm">V</div>
+            <div class="tile tile-sm">A</div>
+            <div class="tile tile-sm">G</div>
+            <div class="tile tile-sm" data-state="absent">U</div>
+            <div class="tile tile-sm">E</div>
+          </div>
+          <p class="example-caption"><strong>U</strong> is not in the word in any spot.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode & Variant Modal -->
+    <div id="modal-mode" class="modal hidden">
+      <div class="modal-header">
+        <h2>Game Mode</h2>
+        <button class="icon-btn modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-label">Play Mode</div>
+        <div class="segmented" id="play-mode-toggle">
+          <button type="button" class="seg-btn" data-mode="daily">Daily</button>
+          <button type="button" class="seg-btn" data-mode="practice">Practice (Unlimited)</button>
+        </div>
+
+        <div class="section-label" style="margin-top: 18px;">Variant</div>
+        <div id="variant-list" class="variant-list"></div>
+
+        <button id="btn-new-practice" class="primary-btn hidden" style="margin-top: 16px; width: 100%;">
+          New Practice Word
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="modal-stats" class="modal hidden">
+      <div class="modal-header">
+        <h2 id="stats-title">Statistics</h2>
+        <button class="icon-btn modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div id="stat-played" class="stat-val">0</div>
+            <div class="stat-lbl">Played</div>
+          </div>
+          <div class="stat-item">
+            <div id="stat-win-pct" class="stat-val">0</div>
+            <div class="stat-lbl">Win %</div>
+          </div>
+          <div class="stat-item">
+            <div id="stat-streak" class="stat-val">0</div>
+            <div class="stat-lbl">Current Streak</div>
+          </div>
+          <div class="stat-item">
+            <div id="stat-max-streak" class="stat-val">0</div>
+            <div class="stat-lbl">Max Streak</div>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top: 18px;">Guess Distribution</div>
+        <div id="guess-dist" class="guess-dist"></div>
+
+        <div id="stats-actions" class="stats-actions hidden">
+          <button id="btn-share" class="primary-btn">Share</button>
+          <button id="btn-play-again" class="secondary-btn">New Practice Word</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="modal hidden">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="icon-btn modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body settings-list">
+        <label class="setting-row">
+          <div>
+            <div class="setting-title">Hard Mode</div>
+            <div class="setting-desc">Any revealed hints must be used in subsequent guesses</div>
+          </div>
+          <input type="checkbox" id="toggle-hard" class="switch" />
+        </label>
+        <label class="setting-row">
+          <div>
+            <div class="setting-title">Dark Theme</div>
+            <div class="setting-desc">Easy on the eyes in low light</div>
+          </div>
+          <input type="checkbox" id="toggle-dark" class="switch" />
+        </label>
+        <label class="setting-row">
+          <div>
+            <div class="setting-title">High Contrast Mode</div>
+            <div class="setting-desc">Colorblind-friendly orange and blue tiles</div>
+          </div>
+          <input type="checkbox" id="toggle-contrast" class="switch" />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
