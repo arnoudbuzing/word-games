@@ -146,4 +146,5 @@ test("formatShareText produces valid emoji grid", () => {
   });
   assert.match(text, /Tilewise #42 2\/6/);
   assert.match(text, /🟦🟦🟦🟦🟦/);
+  assert.match(text, /https:\/\/arnoudbuzing\.github\.io\/word-games\//);
 });

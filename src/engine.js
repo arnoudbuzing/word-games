@@ -199,6 +199,8 @@ export function validateGuessForVariant(guess, variant, context) {
   return { ok: true };
 }
 
+export const PUBLIC_URL = "https://arnoudbuzing.github.io/word-games/";
+
 /**
  * Format shareable emoji grid text.
  */
@@ -209,6 +211,7 @@ export function formatShareText({
   evaluations,
   won,
   highContrast = false,
+  url = PUBLIC_URL,
 }) {
   const score = won ? String(evaluations.length) : "X";
   const label =
@@ -231,7 +234,7 @@ export function formatShareText({
     )
     .join("\n");
 
-  return `${header}\n\n${grid}`;
+  return url ? `${header}\n\n${grid}\n\n${url}` : `${header}\n\n${grid}`;
 }
 
 /**
