@@ -144,6 +144,6 @@ test("formatShareText produces valid emoji grid", () => {
     won: true,
     highContrast: false,
   });
-  assert.match(text, /Wordle #42 2\/6/);
-  assert.match(text, /🟩🟩🟩🟩🟩/);
+  assert.match(text, /Tilewise #42 2\/6/);
+  assert.match(text, /🟦🟦🟦🟦🟦/);
 });

@@ -1,6 +1,6 @@
-# Word Games
+# Tilewise
 
-A mobile-friendly, zero-build Wordle-style word game designed to be easily extended with new variants (different word lengths, guess counts, or custom rules).
+A mobile-friendly, zero-build word deduction game designed to be easily extended with new variants (4–7 letter words, 4–9 guesses, or custom rules).
 
 ## Features
 

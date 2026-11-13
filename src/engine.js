@@ -215,16 +215,16 @@ export function formatShareText({
     mode === "daily" ? `${variant.name} #${puzzleNumber}` : `${variant.name} (Practice)`;
   const header = `${label} ${score}/${variant.maxGuesses}`;
 
-  const green = highContrast ? "🟧" : "🟩";
-  const yellow = highContrast ? "🟦" : "🟨";
+  const correctSquare = "🟦";
+  const presentSquare = "🟧";
   const gray = "⬛";
 
   const grid = evaluations
     .map((row) =>
       row
         .map((cell) => {
-          if (cell.state === LETTER_STATE.CORRECT) return green;
-          if (cell.state === LETTER_STATE.PRESENT) return yellow;
+          if (cell.state === LETTER_STATE.CORRECT) return correctSquare;
+          if (cell.state === LETTER_STATE.PRESENT) return presentSquare;
           return gray;
         })
         .join("")

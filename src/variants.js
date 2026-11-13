@@ -51,7 +51,7 @@ export function createVariant(
 
   return {
     id: `w${len}-g${guesses}`,
-    name: len === 5 && guesses === 6 ? "Wordle" : `Wordle ${len}×${guesses}`,
+    name: len === 5 && guesses === 6 ? "Tilewise" : `Tilewise ${len}×${guesses}`,
     shortLabel: `${len}×${guesses}`,
     description: `${len}-letter word in ${guesses} guesses.`,
     wordLength: len,
