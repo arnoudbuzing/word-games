@@ -4,6 +4,7 @@ const DEFAULT_SETTINGS = {
   theme: "dark",
   highContrast: false,
   hardMode: false,
+  sound: true,
   wordLength: 5,
   maxGuesses: 6,
   playMode: "daily",

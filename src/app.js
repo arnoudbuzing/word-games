@@ -25,6 +25,18 @@ import {
   saveGameState,
   saveSettings,
 } from "./storage.js";
+import {
+  playBackspace,
+  playInvalid,
+  playKey,
+  playLose,
+  playModalClose,
+  playModalOpen,
+  playReveal,
+  playUiClick,
+  playWin,
+  setSoundEnabled,
+} from "./sound.js";
 
 const KEYBOARD_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -77,6 +89,7 @@ const dom = {
   btnPlayAgain: document.getElementById("btn-play-again"),
   toggleHard: document.getElementById("toggle-hard"),
   toggleDark: document.getElementById("toggle-dark"),
+  toggleSound: document.getElementById("toggle-sound"),
   toggleContrast: document.getElementById("toggle-contrast"),
 };
 
@@ -104,7 +117,9 @@ function applyTheme() {
   }
   dom.toggleHard.checked = settings.hardMode;
   dom.toggleDark.checked = settings.theme === "dark";
+  dom.toggleSound.checked = settings.sound;
   dom.toggleContrast.checked = settings.highContrast;
+  setSoundEnabled(settings.sound);
 }
 
 function loadOrStartGame(forceNewPractice = false) {
@@ -151,6 +166,7 @@ function startNewGame() {
   }
   clearGameState(variant.id, "practice");
   loadOrStartGame(true);
+  playUiClick();
   showToast("New game started");
 }
 
@@ -267,6 +283,7 @@ function handleInput(key) {
     if (gameState.currentGuess.length > 0) {
       gameState.currentGuess = gameState.currentGuess.slice(0, -1);
       updateCurrentRowUI(-1);
+      playBackspace();
     }
     return;
   }
@@ -276,6 +293,7 @@ function handleInput(key) {
       const idx = gameState.currentGuess.length;
       gameState.currentGuess += key;
       updateCurrentRowUI(idx);
+      playKey();
     }
   }
 }
@@ -307,6 +325,7 @@ function submitCurrentGuess() {
 
   if (!check.ok) {
     shakeCurrentRow();
+    playInvalid();
     showToast(check.message);
     return;
   }
@@ -339,11 +358,13 @@ function submitCurrentGuess() {
     updateKeyboardColors();
     if (won) {
       bounceRow(rowIndex);
+      playWin();
       const msg =
         WIN_MESSAGES[Math.min(rowIndex, WIN_MESSAGES.length - 1)];
       showToast(msg, 2000);
       setTimeout(() => openModal("stats"), 1100);
     } else if (lost) {
+      playLose();
       showToast(gameState.target.toUpperCase(), 3500);
       setTimeout(() => openModal("stats"), 1400);
     }
@@ -361,6 +382,7 @@ function animateRowReveal(rowIndex, evaluation, onComplete) {
       tile.classList.add("flip");
       setTimeout(() => {
         tile.dataset.state = evaluation[i].state;
+        playReveal(evaluation[i].state, i);
       }, 220);
     }, i * stepMs);
   });
@@ -417,9 +439,13 @@ function openModal(name) {
   Object.values(dom.modals).forEach((m) => m.classList.add("hidden"));
   dom.modals[name].classList.remove("hidden");
   dom.backdrop.classList.remove("hidden");
+  playModalOpen();
 }
 
 function closeModals() {
+  if (!dom.backdrop.classList.contains("hidden")) {
+    playModalClose();
+  }
   dom.backdrop.classList.add("hidden");
   Object.values(dom.modals).forEach((m) => m.classList.add("hidden"));
 }
@@ -449,6 +475,7 @@ function renderModeModal() {
     settings.wordLength,
     (len) => {
       if (settings.wordLength !== len) {
+        playUiClick();
         settings.wordLength = len;
         saveSettings(settings);
         loadOrStartGame();
@@ -464,6 +491,7 @@ function renderModeModal() {
     settings.maxGuesses,
     (guesses) => {
       if (settings.maxGuesses !== guesses) {
+        playUiClick();
         settings.maxGuesses = guesses;
         saveSettings(settings);
         loadOrStartGame();
@@ -535,6 +563,7 @@ async function handleShare() {
 function bindEvents() {
   dom.btnMenu.addEventListener("click", (e) => {
     e.stopPropagation();
+    playUiClick();
     toggleNavMenu();
   });
 
@@ -559,6 +588,7 @@ function bindEvents() {
   document.getElementById("menu-settings").addEventListener("click", () => openModal("settings"));
 
   document.getElementById("btn-copy-link").addEventListener("click", async () => {
+    playUiClick();
     try {
       await navigator.clipboard.writeText(PUBLIC_URL);
       showToast("Link copied");
@@ -580,6 +610,7 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       const nextMode = btn.dataset.mode;
       if (settings.playMode !== nextMode) {
+        playUiClick();
         settings.playMode = nextMode;
         saveSettings(settings);
         loadOrStartGame();
@@ -598,7 +629,10 @@ function bindEvents() {
     closeModals();
   });
 
-  dom.btnShare.addEventListener("click", handleShare);
+  dom.btnShare.addEventListener("click", () => {
+    playUiClick();
+    handleShare();
+  });
 
   dom.toggleHard.addEventListener("change", () => {
     if (
@@ -607,20 +641,31 @@ function bindEvents() {
       gameState.status === "playing"
     ) {
       dom.toggleHard.checked = false;
+      playInvalid();
       showToast("Hard mode can only be enabled at the start of a round");
       return;
     }
+    playUiClick();
     settings.hardMode = dom.toggleHard.checked;
     saveSettings(settings);
   });
 
   dom.toggleDark.addEventListener("change", () => {
+    playUiClick();
     settings.theme = dom.toggleDark.checked ? "dark" : "light";
     saveSettings(settings);
     applyTheme();
   });
 
+  dom.toggleSound.addEventListener("change", () => {
+    settings.sound = dom.toggleSound.checked;
+    saveSettings(settings);
+    setSoundEnabled(settings.sound);
+    if (settings.sound) playUiClick();
+  });
+
   dom.toggleContrast.addEventListener("change", () => {
+    playUiClick();
     settings.highContrast = dom.toggleContrast.checked;
     saveSettings(settings);
     applyTheme();
