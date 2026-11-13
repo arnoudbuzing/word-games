@@ -8,10 +8,7 @@ let ctx = null;
 let masterBus = null;
 let reverbNode = null;
 let enabled = true;
-let keyStep = 0;
 
-// C major pentatonic frequencies for pleasant melodic key taps
-const KEY_SCALE = [392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 // Ascending C major scale for tile reveals
 const REVEAL_CORRECT_SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66];
 const REVEAL_PRESENT_SCALE = [349.23, 392.0, 440.0, 493.88, 523.25, 587.33, 659.25];
@@ -154,20 +151,18 @@ export function setSoundEnabled(value) {
   enabled = Boolean(value);
 }
 
-// Marimba key tap
+// Consistent soft marimba tap on letter entry
 export function playKey() {
-  const freq = KEY_SCALE[keyStep % KEY_SCALE.length];
-  keyStep += 1;
-  playMalletClick({ freq: 1800, gain: 0.035, duration: 0.018 });
+  playMalletClick({ freq: 1600, gain: 0.032, duration: 0.016 });
   playInstrument({
-    freq,
-    duration: 0.09,
-    gain: 0.09,
-    filterFreq: 2400,
-    reverbSend: 0.2,
+    freq: 440,
+    duration: 0.075,
+    gain: 0.08,
+    filterFreq: 2000,
+    reverbSend: 0.15,
     partials: [
       { ratio: 1, amp: 1, type: "sine" },
-      { ratio: 4, amp: 0.18, type: "sine" },
+      { ratio: 4, amp: 0.14, type: "sine" },
     ],
   });
 }
