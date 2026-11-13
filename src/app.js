@@ -87,6 +87,7 @@ const dom = {
   guessDist: document.getElementById("guess-dist"),
   statsActions: document.getElementById("stats-actions"),
   btnShare: document.getElementById("btn-share"),
+  btnShareResult: document.getElementById("btn-share-result"),
   btnPlayAgain: document.getElementById("btn-play-again"),
   toggleHard: document.getElementById("toggle-hard"),
   toggleDark: document.getElementById("toggle-dark"),
@@ -437,6 +438,9 @@ function openModal(name) {
   toggleNavMenu(false);
   if (name === "stats") renderStatsModal();
   if (name === "mode") renderModeModal();
+  if (name === "qr") {
+    dom.btnShareResult.classList.toggle("hidden", gameState.status === "playing");
+  }
 
   Object.values(dom.modals).forEach((m) => m.classList.add("hidden"));
   dom.modals[name].classList.remove("hidden");
@@ -632,6 +636,11 @@ function bindEvents() {
   });
 
   dom.btnShare.addEventListener("click", () => {
+    playUiClick();
+    handleShare();
+  });
+
+  dom.btnShareResult.addEventListener("click", () => {
     playUiClick();
     handleShare();
   });

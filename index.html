@@ -155,10 +155,10 @@
       </div>
     </div>
 
-    <!-- QR Code Modal -->
+    <!-- Share / QR Code Modal -->
     <div id="modal-qr" class="modal hidden">
       <div class="modal-header">
-        <h2>Play on Mobile</h2>
+        <h2>Share</h2>
         <button class="icon-btn modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body qr-body">
@@ -167,7 +167,10 @@
           <img src="assets/qr.svg" alt="QR code for https://arnoudbuzing.github.io/word-games/" class="qr-img" />
         </div>
         <div class="qr-url">https://arnoudbuzing.github.io/word-games/</div>
-        <button id="btn-copy-link" class="primary-btn" style="width: 100%; margin-top: 12px;">
+        <button id="btn-share-result" class="primary-btn hidden" style="width: 100%; margin-top: 14px;">
+          Share Result
+        </button>
+        <button id="btn-copy-link" class="secondary-btn" style="width: 100%; margin-top: 8px;">
           Copy Link
         </button>
       </div>
