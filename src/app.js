@@ -37,6 +37,7 @@ import {
   playWin,
   setSoundEnabled,
 } from "./sound.js";
+import { launchConfetti } from "./confetti.js";
 
 const KEYBOARD_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -359,6 +360,7 @@ function submitCurrentGuess() {
     if (won) {
       bounceRow(rowIndex);
       playWin();
+      launchConfetti();
       const msg =
         WIN_MESSAGES[Math.min(rowIndex, WIN_MESSAGES.length - 1)];
       showToast(msg, 2000);
