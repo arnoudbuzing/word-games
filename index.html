@@ -13,35 +13,29 @@
   <div class="app">
     <header class="header">
       <div class="header-left">
-        <button id="btn-help" class="icon-btn" aria-label="How to play" title="How to play">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        <button id="btn-menu" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu" title="Menu">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
+
+        <nav id="nav-menu" class="nav-menu hidden" aria-label="Game menu">
+          <button type="button" class="nav-item" id="menu-new-game">New Game</button>
+          <button type="button" class="nav-item" id="menu-setup">Game Setup</button>
+          <button type="button" class="nav-item" id="menu-stats">Statistics</button>
+          <button type="button" class="nav-item" id="menu-help">How to Play</button>
+          <button type="button" class="nav-item" id="menu-settings">Settings</button>
+        </nav>
       </div>
 
-      <button id="btn-mode" class="title-btn" aria-label="Change game mode or variant">
+      <button id="btn-mode" class="title-btn" aria-label="Game setup">
         <span id="header-title" class="header-title">Wordle</span>
         <span id="header-badge" class="header-badge">5×6 · Daily</span>
       </button>
 
-      <div class="header-right">
-        <button id="btn-stats" class="icon-btn" aria-label="Statistics" title="Statistics">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-        </button>
-        <button id="btn-settings" class="icon-btn" aria-label="Settings" title="Settings">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.77 1.02 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
-      </div>
+      <div class="header-right"></div>
     </header>
 
     <div id="toast-container" class="toast-container" aria-live="polite"></div>
@@ -99,10 +93,10 @@
       </div>
     </div>
 
-    <!-- Mode & Variant Modal -->
+    <!-- Game Setup Modal -->
     <div id="modal-mode" class="modal hidden">
       <div class="modal-header">
-        <h2>Game Mode</h2>
+        <h2>Game Setup</h2>
         <button class="icon-btn modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -112,11 +106,14 @@
           <button type="button" class="seg-btn" data-mode="practice">Practice (Unlimited)</button>
         </div>
 
-        <div class="section-label" style="margin-top: 18px;">Variant</div>
-        <div id="variant-list" class="variant-list"></div>
+        <div class="section-label" style="margin-top: 18px;">Word Length (Letters)</div>
+        <div class="segmented-row" id="word-length-picker"></div>
 
-        <button id="btn-new-practice" class="primary-btn hidden" style="margin-top: 16px; width: 100%;">
-          New Practice Word
+        <div class="section-label" style="margin-top: 18px;">Max Guesses</div>
+        <div class="segmented-row" id="max-guesses-picker"></div>
+
+        <button id="btn-new-practice" class="primary-btn" style="margin-top: 20px; width: 100%;">
+          Start New Game
         </button>
       </div>
     </div>
@@ -152,7 +149,7 @@
 
         <div id="stats-actions" class="stats-actions hidden">
           <button id="btn-share" class="primary-btn">Share</button>
-          <button id="btn-play-again" class="secondary-btn">New Practice Word</button>
+          <button id="btn-play-again" class="secondary-btn">New Game</button>
         </div>
       </div>
     </div>

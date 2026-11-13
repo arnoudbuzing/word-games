@@ -8,7 +8,13 @@ import {
   selectTargetWord,
   validateGuessForVariant,
 } from "./engine.js";
-import { getVariant, listVariants } from "./variants.js";
+import {
+  MAX_MAX_GUESSES,
+  MAX_WORD_LENGTH,
+  MIN_MAX_GUESSES,
+  MIN_WORD_LENGTH,
+  createVariant,
+} from "./variants.js";
 import {
   clearGameState,
   loadGameState,
@@ -31,11 +37,16 @@ const WIN_MESSAGES = [
   "Impressive!",
   "Splendid!",
   "Great!",
+  "Nice!",
+  "Got it!",
+  "Close call!",
   "Phew!",
 ];
 
 const dom = {
   html: document.documentElement,
+  btnMenu: document.getElementById("btn-menu"),
+  navMenu: document.getElementById("nav-menu"),
   headerTitle: document.getElementById("header-title"),
   headerBadge: document.getElementById("header-badge"),
   board: document.getElementById("board"),
@@ -50,7 +61,8 @@ const dom = {
   },
   helpSummary: document.getElementById("help-summary"),
   playModeToggle: document.getElementById("play-mode-toggle"),
-  variantList: document.getElementById("variant-list"),
+  wordLengthPicker: document.getElementById("word-length-picker"),
+  maxGuessesPicker: document.getElementById("max-guesses-picker"),
   btnNewPractice: document.getElementById("btn-new-practice"),
   statsTitle: document.getElementById("stats-title"),
   statPlayed: document.getElementById("stat-played"),
@@ -67,7 +79,7 @@ const dom = {
 };
 
 let settings = loadSettings();
-let variant = getVariant(settings.variantId);
+let variant = createVariant(settings.wordLength, settings.maxGuesses);
 let gameState = null;
 let isAnimating = false;
 
@@ -94,7 +106,7 @@ function applyTheme() {
 }
 
 function loadOrStartGame(forceNewPractice = false) {
-  variant = getVariant(settings.variantId);
+  variant = createVariant(settings.wordLength, settings.maxGuesses);
   const mode = settings.playMode;
   const dateKey = getLocalDateKey();
 
@@ -103,12 +115,18 @@ function loadOrStartGame(forceNewPractice = false) {
   const isDailyStale =
     mode === "daily" && saved && saved.dateKey !== dateKey;
 
-  if (!saved || isDailyStale || saved.wordLength !== variant.wordLength) {
+  if (
+    !saved ||
+    isDailyStale ||
+    saved.wordLength !== variant.wordLength ||
+    saved.maxGuesses !== variant.maxGuesses
+  ) {
     saved = {
       variantId: variant.id,
       mode,
       dateKey,
       wordLength: variant.wordLength,
+      maxGuesses: variant.maxGuesses,
       target: selectTargetWord(variant, mode),
       guesses: [],
       evaluations: [],
@@ -122,6 +140,16 @@ function loadOrStartGame(forceNewPractice = false) {
   updateHeader();
   renderBoard();
   updateKeyboardColors();
+}
+
+function startNewGame() {
+  if (settings.playMode !== "practice") {
+    settings.playMode = "practice";
+    saveSettings(settings);
+  }
+  clearGameState(variant.id, "practice");
+  loadOrStartGame(true);
+  showToast("New game started");
 }
 
 function updateHeader() {
@@ -143,7 +171,8 @@ function renderBoard() {
     rowEl.dataset.row = String(r);
 
     const submittedEval = gameState.evaluations[r];
-    const isCurrent = r === gameState.guesses.length && gameState.status === "playing";
+    const isCurrent =
+      r === gameState.guesses.length && gameState.status === "playing";
 
     for (let c = 0; c < wordLength; c++) {
       const tile = document.createElement("div");
@@ -224,6 +253,7 @@ function updateKeyboardColors() {
 function handleInput(key) {
   if (isAnimating) return;
   if (!dom.backdrop.classList.contains("hidden")) return;
+  if (!dom.navMenu.classList.contains("hidden")) return;
   if (gameState.status !== "playing") return;
 
   if (key === "enter") {
@@ -307,7 +337,8 @@ function submitCurrentGuess() {
     updateKeyboardColors();
     if (won) {
       bounceRow(rowIndex);
-      const msg = WIN_MESSAGES[Math.min(rowIndex, WIN_MESSAGES.length - 1)];
+      const msg =
+        WIN_MESSAGES[Math.min(rowIndex, WIN_MESSAGES.length - 1)];
       showToast(msg, 2000);
       setTimeout(() => openModal("stats"), 1100);
     } else if (lost) {
@@ -321,7 +352,7 @@ function animateRowReveal(rowIndex, evaluation, onComplete) {
   isAnimating = true;
   const rowEl = dom.board.querySelector(`.board-row[data-row="${rowIndex}"]`);
   const tiles = rowEl.querySelectorAll(".tile");
-  const stepMs = 240;
+  const stepMs = 200;
 
   tiles.forEach((tile, i) => {
     setTimeout(() => {
@@ -353,7 +384,7 @@ function bounceRow(rowIndex) {
   if (!rowEl) return;
   const tiles = rowEl.querySelectorAll(".tile");
   tiles.forEach((tile, i) => {
-    setTimeout(() => tile.classList.add("bounce"), i * 80);
+    setTimeout(() => tile.classList.add("bounce"), i * 70);
   });
 }
 
@@ -367,7 +398,17 @@ function showToast(message, duration = 1600) {
   }, duration);
 }
 
+function toggleNavMenu(forceOpen) {
+  const shouldOpen =
+    typeof forceOpen === "boolean"
+      ? forceOpen
+      : dom.navMenu.classList.contains("hidden");
+  dom.navMenu.classList.toggle("hidden", !shouldOpen);
+  dom.btnMenu.setAttribute("aria-expanded", String(shouldOpen));
+}
+
 function openModal(name) {
+  toggleNavMenu(false);
   if (name === "stats") renderStatsModal();
   if (name === "mode") renderModeModal();
 
@@ -381,40 +422,53 @@ function closeModals() {
   Object.values(dom.modals).forEach((m) => m.classList.add("hidden"));
 }
 
+function renderSegmentedNumbers(container, min, max, activeVal, onSelect) {
+  container.innerHTML = "";
+  for (let n = min; n <= max; n++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `seg-btn${n === activeVal ? " active" : ""}`;
+    btn.textContent = String(n);
+    btn.addEventListener("click", () => onSelect(n));
+    container.appendChild(btn);
+  }
+}
+
 function renderModeModal() {
   const modeButtons = dom.playModeToggle.querySelectorAll(".seg-btn");
   modeButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.mode === settings.playMode);
   });
 
-  dom.btnNewPractice.classList.toggle(
-    "hidden",
-    settings.playMode !== "practice"
-  );
-
-  dom.variantList.innerHTML = "";
-  for (const v of listVariants()) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = `variant-card${v.id === variant.id ? " active" : ""}`;
-    card.innerHTML = `
-      <div>
-        <div class="variant-name">${v.name}</div>
-        <div class="variant-desc">${v.description}</div>
-      </div>
-      <span class="variant-pill">${v.shortLabel}</span>
-    `;
-    card.addEventListener("click", () => {
-      if (settings.variantId !== v.id) {
-        settings.variantId = v.id;
+  renderSegmentedNumbers(
+    dom.wordLengthPicker,
+    MIN_WORD_LENGTH,
+    MAX_WORD_LENGTH,
+    settings.wordLength,
+    (len) => {
+      if (settings.wordLength !== len) {
+        settings.wordLength = len;
         saveSettings(settings);
         loadOrStartGame();
         renderModeModal();
       }
-      closeModals();
-    });
-    dom.variantList.appendChild(card);
-  }
+    }
+  );
+
+  renderSegmentedNumbers(
+    dom.maxGuessesPicker,
+    MIN_MAX_GUESSES,
+    MAX_MAX_GUESSES,
+    settings.maxGuesses,
+    (guesses) => {
+      if (settings.maxGuesses !== guesses) {
+        settings.maxGuesses = guesses;
+        saveSettings(settings);
+        loadOrStartGame();
+        renderModeModal();
+      }
+    }
+  );
 }
 
 function renderStatsModal() {
@@ -447,7 +501,6 @@ function renderStatsModal() {
 
   const finished = gameState.status !== "playing";
   dom.statsActions.classList.toggle("hidden", !finished);
-  dom.btnPlayAgain.classList.toggle("hidden", settings.playMode !== "practice");
 }
 
 async function handleShare() {
@@ -478,10 +531,31 @@ async function handleShare() {
 }
 
 function bindEvents() {
-  document.getElementById("btn-help").addEventListener("click", () => openModal("help"));
+  dom.btnMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleNavMenu();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (
+      !dom.navMenu.classList.contains("hidden") &&
+      !dom.navMenu.contains(e.target) &&
+      e.target !== dom.btnMenu
+    ) {
+      toggleNavMenu(false);
+    }
+  });
+
+  document.getElementById("menu-new-game").addEventListener("click", () => {
+    toggleNavMenu(false);
+    startNewGame();
+  });
+  document.getElementById("menu-setup").addEventListener("click", () => openModal("mode"));
+  document.getElementById("menu-stats").addEventListener("click", () => openModal("stats"));
+  document.getElementById("menu-help").addEventListener("click", () => openModal("help"));
+  document.getElementById("menu-settings").addEventListener("click", () => openModal("settings"));
+
   document.getElementById("btn-mode").addEventListener("click", () => openModal("mode"));
-  document.getElementById("btn-stats").addEventListener("click", () => openModal("stats"));
-  document.getElementById("btn-settings").addEventListener("click", () => openModal("settings"));
 
   dom.backdrop.addEventListener("click", (e) => {
     if (e.target === dom.backdrop) closeModals();
@@ -503,21 +577,23 @@ function bindEvents() {
   });
 
   dom.btnNewPractice.addEventListener("click", () => {
-    clearGameState(variant.id, "practice");
-    loadOrStartGame(true);
+    startNewGame();
     closeModals();
   });
 
   dom.btnPlayAgain.addEventListener("click", () => {
-    clearGameState(variant.id, "practice");
-    loadOrStartGame(true);
+    startNewGame();
     closeModals();
   });
 
   dom.btnShare.addEventListener("click", handleShare);
 
   dom.toggleHard.addEventListener("change", () => {
-    if (dom.toggleHard.checked && gameState.guesses.length > 0 && gameState.status === "playing") {
+    if (
+      dom.toggleHard.checked &&
+      gameState.guesses.length > 0 &&
+      gameState.status === "playing"
+    ) {
       dom.toggleHard.checked = false;
       showToast("Hard mode can only be enabled at the start of a round");
       return;
@@ -541,6 +617,7 @@ function bindEvents() {
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape") {
+      toggleNavMenu(false);
       closeModals();
       return;
     }

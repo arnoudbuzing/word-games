@@ -1,9 +1,44 @@
 #!/usr/bin/env python3
-"""Build src/data/words-5.js and src/data/words-6.js from dictionary sources."""
+"""Build src/data/words-{4,5,6,7}.js from dictionary sources."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+COMMON_4 = """
+able acid aged also area army away baby back ball band bank base bath bear beat
+been bell belt best bill bird blow blue boat body bomb bond bone book boom born
+boss both bowl bulk burn bush busy call calm came camp card care case cash cast
+cell chat chip city club coal coat code cold come cook cool cope copy core cost
+crew crop dark data date dawn days dead deal dear debt deep deny desk dial diet
+disc disk does done door dose down draw drew drop drug dual duke dust duty each
+earn ease east easy edge else even ever evil exit face fact fail fair fall farm
+fast fate fear feed feel feet fell felt file fill film find fine fire firm fish
+five flat flow food foot ford form fort four free from fuel full fund gain game
+gate gave gear gene gift girl give glad goal goes gold golf gone good gray grew
+grey grow gulf hair half hall hand hang hard harm hate have head hear heat held
+hell help here hero high hill hire hold hole holy home hope host hour huge hung
+hunt hurt idea inch into iron item jack jane jean john join jump jury just keen
+keep kent kept kick kill kind king knee knew know lack lady laid lake land lane
+last late lead left less life lift like line link list live load loan lock logo
+long look lord lose loss lost love luck made mail main make male many mark mass
+matt meal mean meat meet menu mere mike mile milk mill mind mine miss mode mood
+moon more most move much must name navy near neck need news next nice nick nine
+none nose note okay once only onto open oral over pace pack page paid pain pair
+palm park part pass past path peak pick pink pipe plan play plot plug plus poll
+pool poor port post pull pure push race rail rain rank rare rate read real rear
+rely rent rest rice rich ride ring rise risk road rock role roll roof room root
+rose rule rush ruth safe said sake sale salt same sand save seat seed seek seem
+seen self sell send sent sept ship shop shot show shut sick side sign site size
+skin slip slow snow soft soil sold sole some song soon sort soul spot star stay
+step stop such suit sure take tale talk tall tank tape task team tech tell tend
+term test text than that them then they thin this thus till time tiny told toll
+tone tony took tool tour town tree trip true tune turn twin type unit upon used
+user vary vast very vice view vote wage wait wake walk wall want ward warm wash
+wave ways weak wear week well went were west what when whom wide wife wild will
+wind wine wing wire wise wish with wood word wore work yard yeah year your zero
+zone
+"""
 
 COMMON_5 = """
 about above abuse actor acute admit adopt adult after again agent agree ahead
@@ -274,6 +309,60 @@ varied vendor versus victim vision visual volume walker wealth weekly weight
 wholly window winner winter within wonder worker writer yellow
 """
 
+COMMON_7 = """
+ability absence academy account accused achieve acquire address advance adverse
+advised adviser against airline airport alcohol alleged already analyst ancient
+another anxiety anycase anymore applied arrange arrival article assault assumed
+assured attempt attract auction average backing balance banking barrier battery
+bearing beating because bedroom believe beneath benefit besides between billion
+binding brother brought burning cabinet caliber calling capable capital captain
+capture careful carrier caution ceiling central century certain chamber channel
+chapter charity charlie checkup chicken chronic circuit classes classic climate
+closing closure clothes collect college combine comfort command comment compact
+company compare compete complex concept concern concert conduct confirm connect
+consent consist contact contain content contest context control convert correct
+council counsel counter country courage covered creator crystal culture current
+cutting dealing decided decline default defence deficit deliver density deposit
+desktop despite destroy develop devoted diamond digital discuss disease display
+dispute distant diverse divided drawing driving dynamic eastern economy edition
+elderly element engaged enhance essence evening evident exactly examine example
+excited exclude exhibit expense explain explore express extreme factory faculty
+failing failure fashion feature federal feeling fiction fifteen filling finance
+finding fishing fitness foreign forever formula fortune forward founder freedom
+further gallery gateway general genetic genuine gigantic glacier glasses granted
+greater greatly hanging heading healthy hearing heavily helpful heritage highway
+himself history holding holiday housing however hundred husband illegal illness
+imagine imaging improve include initial inquiry insight install instant instead
+intense interim involve jointing journal journey justice justify keeping killing
+kingdom kitchen knowing landing largely lasting leading learned leisure liberal
+liberty library license limited listing logical loyalty machine manager married
+massive maximum meaning measure medical meeting mention message million mineral
+minimal minimum missing mission mistake mixture monitor monthly morning musical
+mystery natural neither nervous network neutral notable nothing nowhere nuclear
+nursing obvious offence officer ongoing opening operate opinion optical organic
+outcome outdoor outlook outside overall pacific package painted parking partial
+partner passage passing passion passive patient pattern payable payment penalty
+pending pension percent perfect perform perhaps phoenix picking picture pioneer
+plastic pointed popular portion poverty precise predict premier premium prepare
+present prevent primary printer privacy private problem proceed process produce
+product profile program project promise promote protect protein protest provide
+publish purpose pushing qualify quality quarter radical railway readily reading
+reality realize receipt receive recover reflect regular related release remains
+removal removed replace request require reserve resolve respect respond restore
+retired revenue reverse reviewe revised rolling romance roughly routine running
+satisfy science section segment serious service session setting seventh several
+shortly showing silence silicon similar sitting sixteen skilled smoking society
+somehow someone speaker special species sponsor station storage strange stretch
+student studied subject succeed success suggest summary support suppose supreme
+surface surgery surplus survive suspect sustain teacher telecom telling tension
+theatre therapy thereby thought through tonight totally touched towards traffic
+trouble turning typical uniform unknown unusual upgrade upscale utility variety
+various vehicle venture version veteran victory viewing village violent virtual
+visible waiting walking wanting warning warrant weather website wedding weekend
+welcome welfare western whereas whereby whether willing winning without witness
+working writing written
+"""
+
 
 def load_words(path: Path) -> set[str]:
     return {
@@ -319,26 +408,24 @@ def write_js_module(out_path: Path, var_prefix: str, answers: list[str], valid: 
 
 
 def main() -> None:
-    wl5 = load_words(ROOT / "scripts/wl_words5.txt")
-    wl6 = load_words(ROOT / "scripts/wl_words6.txt")
-
-    sys5 = load_system_words(5)
-    sys6 = load_system_words(6)
-
-    valid5 = sorted(wl5 | sys5)
-    valid6 = sorted(wl6 | sys6)
-
-    valid5_set = set(valid5)
-    valid6_set = set(valid6)
-
-    answers5 = clean_answers(COMMON_5, valid5_set, 5)
-    answers6 = clean_answers(COMMON_6, valid6_set, 6)
-
-    write_js_module(ROOT / "src/data/words-5.js", "WORDS_5", answers5, valid5)
-    write_js_module(ROOT / "src/data/words-6.js", "WORDS_6", answers6, valid6)
-
-    print(f"5-letter: {len(answers5)} answers, {len(valid5)} valid guesses")
-    print(f"6-letter: {len(answers6)} answers, {len(valid6)} valid guesses")
+    configs = [
+        (4, COMMON_4),
+        (5, COMMON_5),
+        (6, COMMON_6),
+        (7, COMMON_7),
+    ]
+    for length, common_raw in configs:
+        wl = load_words(ROOT / f"scripts/wl_words{length}.txt")
+        sys_words = load_system_words(length)
+        valid = sorted(wl | sys_words)
+        answers = clean_answers(common_raw, set(valid), length)
+        write_js_module(
+            ROOT / f"src/data/words-{length}.js",
+            f"WORDS_{length}",
+            answers,
+            valid,
+        )
+        print(f"{length}-letter: {len(answers)} answers, {len(valid)} valid guesses")
 
 
 if __name__ == "__main__":

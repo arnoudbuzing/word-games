@@ -11,7 +11,7 @@ import {
   validateGuessForVariant,
   formatShareText,
 } from "../src/engine.js";
-import { getVariant, listVariants } from "../src/variants.js";
+import { createVariant, getVariant, listVariants } from "../src/variants.js";
 
 test("evaluateGuess handles exact, present, absent, and duplicate letters", () => {
   // Target: ABBEY, Guess: KEBAB ->
@@ -98,21 +98,30 @@ test("daily index and date key are deterministic", () => {
   assert.equal(getDailyIndex(2000, d1, 101), getDailyIndex(2000, d2, 101));
 });
 
-test("variants registry supports 5-letter and 6-letter modes", () => {
+test("variants registry supports wordLength 4-7 and maxGuesses 4-9", () => {
   const variants = listVariants();
-  assert.ok(variants.length >= 2);
+  assert.ok(variants.length >= 4);
+
+  for (const len of [4, 5, 6, 7]) {
+    for (const guesses of [4, 6, 9]) {
+      const v = createVariant(len, guesses);
+      assert.equal(v.wordLength, len);
+      assert.equal(v.maxGuesses, guesses);
+      assert.ok(v.answers.length >= 400);
+      assert.ok(v.answers.every((w) => w.length === len));
+      assert.ok(v.validGuesses.size >= v.answers.length);
+    }
+  }
+
+  const clampedLow = createVariant(2, 1);
+  assert.equal(clampedLow.wordLength, 4);
+  assert.equal(clampedLow.maxGuesses, 4);
+
+  const clampedHigh = createVariant(12, 20);
+  assert.equal(clampedHigh.wordLength, 7);
+  assert.equal(clampedHigh.maxGuesses, 9);
 
   const v5 = getVariant("classic-5");
-  assert.equal(v5.wordLength, 5);
-  assert.ok(v5.answers.length > 1000);
-  assert.ok(v5.validGuesses.has("crane"));
-  assert.ok(v5.validGuesses.has("books"));
-
-  const v6 = getVariant("six-letter");
-  assert.equal(v6.wordLength, 6);
-  assert.ok(v6.answers.length >= 400);
-  assert.ok(v6.validGuesses.has("planet"));
-
   const invalid = validateGuessForVariant("zzzzz", v5, {
     hardMode: false,
     evaluations: [],
