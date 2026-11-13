@@ -26,6 +26,7 @@
           <button type="button" class="nav-item" id="menu-setup">Game Setup</button>
           <button type="button" class="nav-item" id="menu-stats">Statistics</button>
           <button type="button" class="nav-item" id="menu-help">How to Play</button>
+          <button type="button" class="nav-item" id="menu-qr">QR Code</button>
           <button type="button" class="nav-item" id="menu-settings">Settings</button>
         </nav>
       </div>
@@ -151,6 +152,24 @@
           <button id="btn-share" class="primary-btn">Share</button>
           <button id="btn-play-again" class="secondary-btn">New Game</button>
         </div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="modal-qr" class="modal hidden">
+      <div class="modal-header">
+        <h2>Play on Mobile</h2>
+        <button class="icon-btn modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body qr-body">
+        <p class="qr-caption">Scan to open TILEWISE on another device:</p>
+        <div class="qr-card">
+          <img src="assets/qr.svg" alt="QR code for https://arnoudbuzing.github.io/word-games/" class="qr-img" />
+        </div>
+        <div class="qr-url">https://arnoudbuzing.github.io/word-games/</div>
+        <button id="btn-copy-link" class="primary-btn" style="width: 100%; margin-top: 12px;">
+          Copy Link
+        </button>
       </div>
     </div>
 

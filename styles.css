@@ -698,3 +698,40 @@ body {
 .switch:checked::after {
   transform: translateX(20px);
 }
+
+/* QR Code Modal */
+.qr-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.qr-caption {
+  margin: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.qr-card {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-img {
+  width: 210px;
+  height: 210px;
+  display: block;
+}
+
+.qr-url {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}

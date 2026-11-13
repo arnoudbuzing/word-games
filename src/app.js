@@ -1,5 +1,6 @@
 import {
   LETTER_STATE,
+  PUBLIC_URL,
   computeKeyboardStates,
   evaluateForVariant,
   formatShareText,
@@ -57,6 +58,7 @@ const dom = {
     help: document.getElementById("modal-help"),
     mode: document.getElementById("modal-mode"),
     stats: document.getElementById("modal-stats"),
+    qr: document.getElementById("modal-qr"),
     settings: document.getElementById("modal-settings"),
   },
   helpSummary: document.getElementById("help-summary"),
@@ -553,7 +555,17 @@ function bindEvents() {
   document.getElementById("menu-setup").addEventListener("click", () => openModal("mode"));
   document.getElementById("menu-stats").addEventListener("click", () => openModal("stats"));
   document.getElementById("menu-help").addEventListener("click", () => openModal("help"));
+  document.getElementById("menu-qr").addEventListener("click", () => openModal("qr"));
   document.getElementById("menu-settings").addEventListener("click", () => openModal("settings"));
+
+  document.getElementById("btn-copy-link").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(PUBLIC_URL);
+      showToast("Link copied");
+    } catch {
+      showToast("Could not copy link");
+    }
+  });
 
   document.getElementById("btn-mode").addEventListener("click", () => openModal("mode"));
 
