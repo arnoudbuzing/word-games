@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Tilewise — Word Games</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <div class="app">
@@ -36,7 +36,12 @@
         <span id="header-badge" class="header-badge">5×6 · Daily</span>
       </button>
 
-      <div class="header-right"></div>
+      <div class="header-right">
+        <div id="score-display" class="score-odometer" aria-label="Score: 0" title="Total Score">
+          <span id="score-digits" class="score-digits" aria-hidden="true"></span>
+          <span id="score-delta" class="score-delta" aria-hidden="true"></span>
+        </div>
+      </div>
     </header>
 
     <div id="toast-container" class="toast-container" aria-live="polite"></div>
@@ -215,6 +220,6 @@
     </div>
   </div>
 
-  <script type="module" src="src/app.js"></script>
+  <script type="module" src="src/app.js?v=4"></script>
 </body>
 </html>

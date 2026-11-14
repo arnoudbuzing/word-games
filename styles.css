@@ -93,6 +93,105 @@ body {
   justify-content: flex-end;
 }
 
+/* Top-right Odometer Score */
+.score-odometer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  user-select: none;
+}
+
+.score-digits {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25em;
+  line-height: 1.25em;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+.odometer-digit {
+  display: inline-block;
+  height: 1.25em;
+  width: 0.64em;
+  overflow: hidden;
+  text-align: center;
+}
+
+.odometer-strip {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.odometer-num {
+  display: block;
+  height: 1.25em;
+  line-height: 1.25em;
+}
+
+.score-delta {
+  position: absolute;
+  top: 100%;
+  right: 4px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--correct);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.score-delta.negative {
+  color: #ef4444;
+}
+
+.score-delta.active {
+  animation: score-delta-pop 1.3s ease forwards;
+}
+
+@keyframes score-delta-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.9);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.95);
+  }
+}
+
 /* Hamburger popup menu */
 .nav-menu {
   position: absolute;

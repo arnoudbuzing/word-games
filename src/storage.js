@@ -93,3 +93,26 @@ export function recordGameResult(variantId, maxGuesses, won, guessCount) {
   writeJson(`stats.${variantId}`, stats);
   return stats;
 }
+
+export function loadScore() {
+  const stored = readJson("score", null);
+  return {
+    total: Number.isFinite(stored?.total) ? Math.max(0, Math.round(stored.total)) : 0,
+    bestRound: Number.isFinite(stored?.bestRound)
+      ? Math.max(0, Math.round(stored.bestRound))
+      : 0,
+  };
+}
+
+export function addScore(points, roundTotal = null) {
+  const delta = Math.round(points || 0);
+  const bestCandidate =
+    roundTotal === null ? Math.max(0, delta) : Math.max(0, Math.round(roundTotal));
+  const current = loadScore();
+  const next = {
+    total: Math.max(0, current.total + delta),
+    bestRound: Math.max(current.bestRound, bestCandidate),
+  };
+  writeJson("score", next);
+  return next;
+}

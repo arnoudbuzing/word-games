@@ -259,3 +259,88 @@ export function evaluateForVariant(guess, target, variant) {
   }
   return evaluateGuess(guess, target);
 }
+
+/**
+ * Compute integer points earned for a completed round.
+ * Returns a negative penalty (-wordLength * 10) on a loss.
+ */
+export function calculateRoundScore({
+  wordLength,
+  maxGuesses,
+  guessesUsed,
+  currentStreak = 0,
+  hardMode = false,
+  won = true,
+}) {
+  if (!won) return -(wordLength * 10);
+
+  const base = wordLength * 20;
+  const efficiency = Math.max(0, 7 - guessesUsed) * 20;
+  const tightGrid = Math.max(0, 6 - maxGuesses) * 15;
+  const streakBonus = Math.min(Math.max(0, currentStreak), 10) * 10;
+  const multiplier = hardMode ? 1.25 : 1;
+
+  return Math.round((base + efficiency + tightGrid + streakBonus) * multiplier);
+}
+
+/**
+ * Compute net integer points for a guess:
+ * - +10 for each newly locked-in green position
+ * - +5 for each newly discovered yellow letter
+ * - -5 for each letter used that is already known not to be in the word
+ * Already-known green/yellow positions and letters award 0 so points cannot be farmed.
+ */
+export function calculateDiscoveryScore(
+  previousEvaluations,
+  currentEvaluation,
+  hardMode = false
+) {
+  const knownGreenPositions = new Set();
+  const knownLetters = new Set();
+  const seenAbsent = new Set();
+
+  for (const row of previousEvaluations) {
+    for (let i = 0; i < row.length; i++) {
+      const { letter, state } = row[i];
+      if (state === LETTER_STATE.CORRECT) {
+        knownGreenPositions.add(i);
+        knownLetters.add(letter);
+      } else if (state === LETTER_STATE.PRESENT) {
+        knownLetters.add(letter);
+      } else if (state === LETTER_STATE.ABSENT) {
+        seenAbsent.add(letter);
+      }
+    }
+  }
+
+  const knownAbsentLetters = new Set();
+  for (const letter of seenAbsent) {
+    if (!knownLetters.has(letter)) {
+      knownAbsentLetters.add(letter);
+    }
+  }
+
+  let points = 0;
+  let penalty = 0;
+  for (let i = 0; i < currentEvaluation.length; i++) {
+    const { letter, state } = currentEvaluation[i];
+    if (knownAbsentLetters.has(letter)) {
+      penalty += 5;
+    }
+    if (state === LETTER_STATE.CORRECT) {
+      if (!knownGreenPositions.has(i)) {
+        points += 10;
+        knownGreenPositions.add(i);
+      }
+      knownLetters.add(letter);
+    } else if (state === LETTER_STATE.PRESENT) {
+      if (!knownLetters.has(letter)) {
+        points += 5;
+        knownLetters.add(letter);
+      }
+    }
+  }
+
+  const multiplier = hardMode ? 1.25 : 1;
+  return Math.round(points * multiplier) - penalty;
+}

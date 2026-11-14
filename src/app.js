@@ -1,6 +1,8 @@
 import {
   LETTER_STATE,
   PUBLIC_URL,
+  calculateDiscoveryScore,
+  calculateRoundScore,
   computeKeyboardStates,
   evaluateForVariant,
   formatShareText,
@@ -8,7 +10,7 @@ import {
   getLocalDateKey,
   selectTargetWord,
   validateGuessForVariant,
-} from "./engine.js";
+} from "./engine.js?v=4";
 import {
   MAX_MAX_GUESSES,
   MAX_WORD_LENGTH,
@@ -17,14 +19,16 @@ import {
   createVariant,
 } from "./variants.js";
 import {
+  addScore,
   clearGameState,
   loadGameState,
+  loadScore,
   loadSettings,
   loadStats,
   recordGameResult,
   saveGameState,
   saveSettings,
-} from "./storage.js";
+} from "./storage.js?v=4";
 import {
   playBackspace,
   playInvalid,
@@ -33,10 +37,12 @@ import {
   playModalClose,
   playModalOpen,
   playReveal,
+  playScorePenalty,
+  playScoreUpdate,
   playUiClick,
   playWin,
   setSoundEnabled,
-} from "./sound.js";
+} from "./sound.js?v=4";
 import { launchConfetti } from "./confetti.js";
 
 const KEYBOARD_ROWS = [
@@ -63,6 +69,9 @@ const dom = {
   navMenu: document.getElementById("nav-menu"),
   headerTitle: document.getElementById("header-title"),
   headerBadge: document.getElementById("header-badge"),
+  scoreDisplay: document.getElementById("score-display"),
+  scoreDigits: document.getElementById("score-digits"),
+  scoreDelta: document.getElementById("score-delta"),
   board: document.getElementById("board"),
   keyboard: document.getElementById("keyboard"),
   toastContainer: document.getElementById("toast-container"),
@@ -99,11 +108,13 @@ let settings = loadSettings();
 let variant = createVariant(settings.wordLength, settings.maxGuesses);
 let gameState = null;
 let isAnimating = false;
+let displayedScore = loadScore().total;
 
 function init() {
   applyTheme();
   bindEvents();
   renderKeyboard();
+  renderScoreOdometer(displayedScore, displayedScore, false);
   loadOrStartGame();
 }
 
@@ -334,10 +345,16 @@ function submitCurrentGuess() {
 
   const rowIndex = gameState.guesses.length;
   const evaluation = evaluateForVariant(guess, gameState.target, variant);
+  const discoveryPoints = calculateDiscoveryScore(
+    gameState.evaluations,
+    evaluation,
+    settings.hardMode
+  );
 
   gameState.guesses.push(guess);
   gameState.evaluations.push(evaluation);
   gameState.currentGuess = "";
+  gameState.roundScore = (gameState.roundScore || 0) + discoveryPoints;
 
   const won = evaluation.every((cell) => cell.state === LETTER_STATE.CORRECT);
   const lost = !won && gameState.guesses.length >= variant.maxGuesses;
@@ -345,16 +362,34 @@ function submitCurrentGuess() {
   if (won) gameState.status = "won";
   else if (lost) gameState.status = "lost";
 
-  saveGameState(variant.id, settings.playMode, gameState);
+  const prevScore = displayedScore;
+  let roundOutcomePoints = 0;
 
   if (won || lost) {
-    recordGameResult(
+    const updatedStats = recordGameResult(
       variant.id,
       variant.maxGuesses,
       won,
       gameState.guesses.length
     );
+    roundOutcomePoints = calculateRoundScore({
+      wordLength: variant.wordLength,
+      maxGuesses: variant.maxGuesses,
+      guessesUsed: gameState.guesses.length,
+      currentStreak: won ? Math.max(0, updatedStats.currentStreak - 1) : 0,
+      hardMode: settings.hardMode,
+      won,
+    });
+    gameState.roundScore += roundOutcomePoints;
   }
+
+  saveGameState(variant.id, settings.playMode, gameState);
+
+  const earnedThisTurn = discoveryPoints + roundOutcomePoints;
+  const nextScoreTotal =
+    earnedThisTurn !== 0
+      ? addScore(earnedThisTurn, Math.max(0, gameState.roundScore)).total
+      : displayedScore;
 
   animateRowReveal(rowIndex, evaluation, () => {
     updateKeyboardColors();
@@ -362,14 +397,36 @@ function submitCurrentGuess() {
       bounceRow(rowIndex);
       playWin();
       launchConfetti();
+      if (nextScoreTotal !== prevScore) {
+        setTimeout(() => {
+          renderScoreOdometer(prevScore, nextScoreTotal, true);
+          displayedScore = nextScoreTotal;
+          if (nextScoreTotal > prevScore) {
+            playScoreUpdate({ ticks: 8, chime: true });
+          } else {
+            playScorePenalty();
+          }
+        }, 380);
+      }
       const msg =
         WIN_MESSAGES[Math.min(rowIndex, WIN_MESSAGES.length - 1)];
       showToast(msg, 2000);
-      setTimeout(() => openModal("stats"), 1100);
-    } else if (lost) {
-      playLose();
-      showToast(gameState.target.toUpperCase(), 3500);
-      setTimeout(() => openModal("stats"), 1400);
+      setTimeout(() => openModal("stats"), 1450);
+    } else {
+      if (nextScoreTotal !== prevScore) {
+        renderScoreOdometer(prevScore, nextScoreTotal, true);
+        displayedScore = nextScoreTotal;
+        if (nextScoreTotal > prevScore) {
+          playScoreUpdate({ ticks: 4, chime: false });
+        } else {
+          playScorePenalty();
+        }
+      }
+      if (lost) {
+        playLose();
+        showToast(gameState.target.toUpperCase(), 3500);
+        setTimeout(() => openModal("stats"), 1400);
+      }
     }
   });
 }
@@ -694,6 +751,111 @@ function bindEvents() {
       handleInput(k);
     }
   });
+}
+
+function createOdometerStrip(startDigit) {
+  const col = document.createElement("span");
+  col.className = "odometer-digit";
+
+  const strip = document.createElement("span");
+  strip.className = "odometer-strip";
+
+  for (let pass = 0; pass < 2; pass++) {
+    for (let d = 0; d <= 9; d++) {
+      const cell = document.createElement("span");
+      cell.className = "odometer-num";
+      cell.textContent = String(d);
+      strip.appendChild(cell);
+    }
+  }
+
+  strip.style.transition = "none";
+  strip.style.transform = `translateY(-${startDigit * 1.25}em)`;
+  col.appendChild(strip);
+  return { col, strip };
+}
+
+function renderScoreOdometer(fromScore, toScore, animate = false) {
+  if (!dom.scoreDisplay || !dom.scoreDigits) return;
+
+  const safeFrom = Math.max(0, Math.round(fromScore));
+  const safeTo = Math.max(0, Math.round(toScore));
+  dom.scoreDisplay.setAttribute("aria-label", `Score: ${safeTo}`);
+
+  const toStr = String(safeTo);
+  const fromStr = String(safeFrom).padStart(toStr.length, "0").slice(-toStr.length);
+  const digitsCount = toStr.length;
+  const isDecrease = safeTo < safeFrom;
+
+  dom.scoreDigits.innerHTML = "";
+  const strips = [];
+
+  for (let i = 0; i < digitsCount; i++) {
+    const rawStart = animate ? Number(fromStr[i]) : Number(toStr[i]);
+    const endDigit = Number(toStr[i]);
+    const placeValue = Math.pow(10, digitsCount - 1 - indexOrZero(i));
+    const delta = Math.abs(safeTo - safeFrom);
+    const shouldSpinFull = delta >= placeValue && endDigit === rawStart;
+
+    let initialIdx = rawStart;
+    let targetIdx = endDigit;
+
+    if (animate && safeTo !== safeFrom) {
+      if (isDecrease) {
+        if (endDigit > rawStart || shouldSpinFull) {
+          initialIdx = 10 + rawStart;
+        }
+        targetIdx = endDigit;
+      } else {
+        if (endDigit < rawStart || shouldSpinFull) {
+          targetIdx = 10 + endDigit;
+        }
+      }
+    }
+
+    const { strip } = createOdometerStrip(initialIdx);
+    dom.scoreDigits.appendChild(strip.parentElement);
+    strips.push({ strip, initialIdx, targetIdx, endDigit, index: i });
+  }
+
+  if (!animate || safeTo === safeFrom) return;
+
+  const delta = safeTo - safeFrom;
+  if (dom.scoreDelta) {
+    dom.scoreDelta.textContent = delta > 0 ? `+${delta}` : String(delta);
+    dom.scoreDelta.classList.toggle("negative", delta < 0);
+    dom.scoreDelta.classList.remove("active");
+    void dom.scoreDelta.offsetWidth;
+    dom.scoreDelta.classList.add("active");
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      for (const { strip, initialIdx, targetIdx, endDigit, index } of strips) {
+        if (targetIdx === initialIdx) continue;
+
+        const durationMs = 640 + (digitsCount - 1 - index) * 70;
+        const delayMs = index * 45;
+        strip.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 1, 0.36, 1) ${delayMs}ms`;
+        strip.style.transform = `translateY(-${targetIdx * 1.25}em)`;
+
+        if (targetIdx >= 10) {
+          strip.addEventListener(
+            "transitionend",
+            () => {
+              strip.style.transition = "none";
+              strip.style.transform = `translateY(-${endDigit * 1.25}em)`;
+            },
+            { once: true }
+          );
+        }
+      }
+    });
+  });
+}
+
+function indexOrZero(i) {
+  return i;
 }
 
 init();

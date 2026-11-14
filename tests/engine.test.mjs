@@ -10,6 +10,8 @@ import {
   getLocalDateKey,
   validateGuessForVariant,
   formatShareText,
+  calculateRoundScore,
+  calculateDiscoveryScore,
 } from "../src/engine.js";
 import { createVariant, getVariant, listVariants } from "../src/variants.js";
 
@@ -147,4 +149,82 @@ test("formatShareText produces valid emoji grid", () => {
   assert.match(text, /Tilewise #42 2\/6/);
   assert.match(text, /🟦🟦🟦🟦🟦/);
   assert.match(text, /https:\/\/arnoudbuzing\.github\.io\/word-games\//);
+});
+
+test("calculateRoundScore computes integer scores fairly across variants and modes", () => {
+  // Loss applies a negative penalty (-wordLength * 10)
+  assert.equal(
+    calculateRoundScore({
+      wordLength: 5,
+      maxGuesses: 6,
+      guessesUsed: 6,
+      currentStreak: 4,
+      hardMode: true,
+      won: false,
+    }),
+    -50
+  );
+
+  // Standard 5x6 win in 4 guesses, no streak, normal mode:
+  // base (100) + efficiency (60) + tightGrid (0) + streak (0) = 160
+  assert.equal(
+    calculateRoundScore({
+      wordLength: 5,
+      maxGuesses: 6,
+      guessesUsed: 4,
+      currentStreak: 0,
+      hardMode: false,
+      won: true,
+    }),
+    160
+  );
+
+  // Increasing maxGuesses to 9 does not inflate a 4-guess win
+  assert.equal(
+    calculateRoundScore({
+      wordLength: 5,
+      maxGuesses: 9,
+      guessesUsed: 4,
+      currentStreak: 0,
+      hardMode: false,
+      won: true,
+    }),
+    160
+  );
+
+  // Tighter grid (4 guesses) + streak (capped at 10) + Hard Mode (1.25x)
+  // base (120) + efficiency (100) + tightGrid (30) + streak (100) = 350 * 1.25 = 438
+  assert.equal(
+    calculateRoundScore({
+      wordLength: 6,
+      maxGuesses: 4,
+      guessesUsed: 2,
+      currentStreak: 15,
+      hardMode: true,
+      won: true,
+    }),
+    438
+  );
+});
+
+test("calculateDiscoveryScore awards first-discovery points only once per letter/position", () => {
+  // Target: CRANE
+  // Guess 1: ARISE -> A(present +5), R(correct +10), I(absent), S(absent), E(correct +10) => 25
+  const row1 = evaluateGuess("arise", "crane");
+  assert.equal(calculateDiscoveryScore([], row1, false), 25);
+
+  // Guess 2: ARISE again -> I and S are known absent (-5 each = -10), no new discoveries
+  assert.equal(calculateDiscoveryScore([row1], row1, false), -10);
+
+  // Guess 2: CRATE -> C(correct +10), R(already green 0), A(already yellow, now green +10), T(new absent 0), E(already green 0) => 20
+  const row2 = evaluateGuess("crate", "crane");
+  assert.equal(calculateDiscoveryScore([row1], row2, false), 20);
+
+  // Duplicate letter edge case: E(0) absent + E(4) correct in EERIE -> E is NOT known-absent
+  const eerieRow = evaluateGuess("eerie", "crane");
+  // Guess 2: CRATE uses E(4) -> 0 penalty for E
+  assert.equal(calculateDiscoveryScore([eerieRow], row2, false), 30);
+
+  // Hard mode applies 1.25x multiplier to discoveries (25 * 1.25 = 31)
+  assert.equal(calculateDiscoveryScore([], row1, true), 31);
 });

@@ -331,3 +331,70 @@ export function playLose() {
     });
   });
 }
+
+// Mechanical odometer drum ticks + optional confirmation chime on score update
+export function playScoreUpdate({ ticks = 8, chime = true } = {}) {
+  const stepSec = 0.068;
+
+  for (let i = 0; i < ticks; i++) {
+    const delay = i * stepSec;
+    playMalletClick({
+      freq: 1700 + i * 140,
+      gain: 0.028,
+      duration: 0.016,
+      delay,
+    });
+    playInstrument({
+      freq: 660 + i * 55,
+      duration: 0.045,
+      gain: 0.032,
+      delay,
+      attack: 0.002,
+      filterFreq: 2800,
+      reverbSend: 0.15,
+      partials: [{ ratio: 1, amp: 1, type: "triangle" }],
+    });
+  }
+
+  if (chime) {
+    // Final settle chime
+    playInstrument({
+      freq: 1318.51, // E6
+      duration: 0.36,
+      gain: 0.085,
+      delay: ticks * stepSec + 0.02,
+      attack: 0.004,
+      filterFreq: 5600,
+      reverbSend: 0.55,
+      partials: [
+        { ratio: 1, amp: 1, type: "sine" },
+        { ratio: 2, amp: 0.35, type: "sine" },
+      ],
+    });
+  }
+}
+
+// Descending mechanical ticks on score penalty
+export function playScorePenalty({ ticks = 4 } = {}) {
+  const stepSec = 0.07;
+
+  for (let i = 0; i < ticks; i++) {
+    const delay = i * stepSec;
+    playMalletClick({
+      freq: 1100 - i * 140,
+      gain: 0.026,
+      duration: 0.018,
+      delay,
+    });
+    playInstrument({
+      freq: 330 - i * 32,
+      duration: 0.06,
+      gain: 0.036,
+      delay,
+      attack: 0.002,
+      filterFreq: 1400,
+      reverbSend: 0.15,
+      partials: [{ ratio: 1, amp: 1, type: "triangle" }],
+    });
+  }
+}
