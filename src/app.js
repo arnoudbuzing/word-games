@@ -44,6 +44,7 @@ import {
   setSoundEnabled,
 } from "./sound.js?v=4";
 import { launchConfetti } from "./confetti.js";
+import { hideEndRoundMascot, showEndRoundMascot } from "./mascot.js?v=5";
 
 const KEYBOARD_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -136,6 +137,7 @@ function applyTheme() {
 }
 
 function loadOrStartGame(forceNewPractice = false) {
+  hideEndRoundMascot();
   variant = createVariant(settings.wordLength, settings.maxGuesses);
   const mode = settings.playMode;
   const dateKey = getLocalDateKey();
@@ -397,6 +399,10 @@ function submitCurrentGuess() {
       bounceRow(rowIndex);
       playWin();
       launchConfetti();
+      showEndRoundMascot({
+        won: true,
+        points: Math.max(0, gameState.roundScore || 0),
+      });
       if (nextScoreTotal !== prevScore) {
         setTimeout(() => {
           renderScoreOdometer(prevScore, nextScoreTotal, true);
@@ -424,6 +430,7 @@ function submitCurrentGuess() {
       }
       if (lost) {
         playLose();
+        showEndRoundMascot({ won: false, points: 0 });
         showToast(gameState.target.toUpperCase(), 3500);
         setTimeout(() => openModal("stats"), 1400);
       }
